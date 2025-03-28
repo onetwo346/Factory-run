@@ -3,237 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Factory Run - Ecological 3D Simulation</title>
+    <title>Factory Run</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #0a2e38;
-            color: #e0f7fa;
-            overflow: hidden;
-        }
-        
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        #game-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        
-        #ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        #game-title {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 3rem;
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: 0 0 10px #4fc3f7, 0 0 20px #4fc3f7;
-            animation: pulse 2s infinite;
-        }
-        
-        #eco-meter {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 300px;
-            height: 30px;
-            background-color: rgba(0,0,0,0.5);
-            border-radius: 15px;
-            overflow: hidden;
-        }
-        
-        #eco-fill {
-            height: 100%;
-            width: 50%;
-            background: linear-gradient(90deg, #d32f2f, #ff9800, #4caf50);
-            transition: width 0.5s ease;
-        }
-        
-        #score-display {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5rem;
-            color: #ffffff;
-            text-shadow: 0 0 5px #4fc3f7;
-        }
-        
-        #start-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(10, 46, 56, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #4fc3f7, #01579b);
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 10px;
-            cursor: pointer;
-            border-radius: 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-            pointer-events: auto;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
-        
-        .game-description {
-            max-width: 600px;
-            text-align: center;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-        
-        <div id="ui-overlay">
-            <h1 id="game-title">FACTORY RUN</h1>
-            
-            <div id="eco-meter">
-                <div id="eco-fill"></div>
-            </div>
-            
-            <div id="score-display">
-                Cleaned: <span id="score">0</span> liters
-            </div>
-        </div>
-        
-        <div id="start-screen">
-            <h1 style="font-size: 3rem; margin-bottom: 20px;">FACTORY RUN</h1>
-            
-            <div class="game-description">
-                <p>In Factory Run, you're a boat captain cleaning up pollution from an industrial factory. Restore the marine ecosystem by collecting pollutants before they destroy ocean life. The healthier the ecosystem, the more vibrant the world becomes!</p>
-                <p>But beware - neglect your duties and witness ecological collapse as the factory destroys itself and the environment.</p>
-            </div>
-            
-            <button id="start-btn" class="btn">START GAME</button>
-            <button id="how-to-btn" class="btn">HOW TO PLAY</button>
-        </div>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
     <script>
-        // Game variables
-        let score = 0;
-        let ecoHealth = 50;
-        let gameStarted = false;
-        
-        // Three.js setup
+        // Set up scene, camera, and renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
-        
+        const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x0a2e38);
-        renderer.shadowMap.enabled = true;
-        
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(1, 1, 1);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
-        
-        // Water surface
-        const waterGeometry = new THREE.PlaneGeometry(100, 100, 10, 10);
-        const waterMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x1a6a8a,
-            transparent: true,
-            opacity: 0.9,
-            roughness: 0.1,
-            metalness: 0.5
+        document.body.appendChild(renderer.domElement);
+
+        // Create the ocean (a large plane)
+        const oceanGeometry = new THREE.PlaneGeometry(100, 100);
+        const oceanMaterial = new THREE.MeshBasicMaterial({ color: 0x1E90FF, side: THREE.DoubleSide });
+        const ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
+        ocean.rotation.x = - Math.PI / 2;
+        scene.add(ocean);
+
+        // Create the boat (simple cube for now)
+        const boatGeometry = new THREE.BoxGeometry(2, 0.5, 1);
+        const boatMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+        const boat = new THREE.Mesh(boatGeometry, boatMaterial);
+        boat.position.y = 1;
+        scene.add(boat);
+
+        // Create the factory (a basic cylinder representing the factory)
+        const factoryGeometry = new THREE.CylinderGeometry(3, 3, 10, 32);
+        const factoryMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+        const factory = new THREE.Mesh(factoryGeometry, factoryMaterial);
+        factory.position.set(0, 5, -40);
+        scene.add(factory);
+
+        // Camera setup
+        camera.position.z = 20;
+        camera.position.y = 10;
+        camera.lookAt(boat.position);
+
+        // Handle keyboard inputs for boat movement
+        const keyboard = {};
+        window.addEventListener("keydown", (event) => {
+            keyboard[event.key] = true;
         });
-        const water = new THREE.Mesh(waterGeometry, waterMaterial);
-        water.rotation.x = -Math.PI / 2;
-        water.position.y = -1;
-        water.receiveShadow = true;
-        scene.add(water);
-        
-        // Camera position
-        camera.position.set(0, 5, 15);
-        camera.lookAt(0, 0, 0);
-        
-        // Game objects would be added here (boat, factory, pollution, marine life)
-        // This is a simplified placeholder for the actual implementation
-        
-        // UI event listeners
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('how-to-btn').addEventListener('click', showInstructions);
-        
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            gameStarted = true;
-            animate();
-        }
-        
-        function showInstructions() {
-            alert("HOW TO PLAY:\n\n- Use arrow keys or WASD to move your boat\n- Collect pollution (oil slicks, chemical spills) to clean the ocean\n- Avoid letting pollution accumulate\n- Watch as marine life returns when you clean the water\n- The factory will collapse if pollution gets out of control!");
-        }
-        
-        // Game loop
+        window.addEventListener("keyup", (event) => {
+            keyboard[event.key] = false;
+        });
+
+        // Animation loop
         function animate() {
-            if (!gameStarted) return;
-            
             requestAnimationFrame(animate);
-            
-            // Game logic would go here
-            // Update boat position, pollution spread, ecosystem health, etc.
-            
+
+            // Boat movement controls
+            if (keyboard["w"]) boat.position.z -= 0.1;
+            if (keyboard["s"]) boat.position.z += 0.1;
+            if (keyboard["a"]) boat.position.x -= 0.1;
+            if (keyboard["d"]) boat.position.x += 0.1;
+
+            // Rotate the factory (for visual effect)
+            factory.rotation.y += 0.01;
+
+            // Update the camera to follow the boat
+            camera.position.x = boat.position.x;
+            camera.position.z = boat.position.z + 20;
+            camera.lookAt(boat.position);
+
+            // Render the scene
             renderer.render(scene, camera);
         }
-        
-        // Handle window resize
+
+        // Call the animate function
+        animate();
+
+        // Handle resizing the window
         window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
